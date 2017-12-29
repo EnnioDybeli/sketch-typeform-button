@@ -7,7 +7,7 @@ A sketch plugin for changing text to typeform's design system buttons based on [
 3. In Sketch, run the plugin with one of the shortcuts.
 
 ## Shortcut
-- Use `⌘j` to turn any text label to a typeform button
+- Use `⌘j` to turn any text layer to a typeform button
 
 ## Preview
 ![](https://i.imgur.com/nlzvAAA.gif)
