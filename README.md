@@ -1,4 +1,4 @@
-# Typeform Button
+# 💎 Typeform Button
 A sketch plugin for changing text to typeform's design system buttons based on [Dynamic Button](https://github.com/fuggfuggfugg/sketch-dynamic-button-3.5)
 
 - Use `⌘j` to turn any text label to a typeform button
