@@ -1,0 +1,27 @@
+{
+  "name": "Typeform Button",
+  "description": "DynamicButton for Sketch 3.5 and after.",
+  "author": "Ennio",
+  "authorEmail": "ennio@typeform.com",
+  "homepage": "https://github.com/typeform",
+  "version": "1.0",
+  "bundleVersion": 1.1,
+  "compatibleVersion": 45.1,
+  "identifier": "me.ennio.TypeformButton",
+  "commands": [
+    {
+      "script": "script.cocoascript",
+      "handler": "onRun",
+      "shortcut": "cmd j",
+      "name": "Typeform Button",
+      "identifier": "TypeformButton"
+    }
+  ],
+  "menu": {
+    "isRoot": true,
+    "items": [
+      "TypeformButton"
+    ],
+    "title": "TypeformButton"
+  }
+}

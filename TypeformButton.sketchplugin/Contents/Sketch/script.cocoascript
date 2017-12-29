@@ -1,0 +1,317 @@
+// Dynamic Button Plugin (cmd j)
+/*
+  Original code from https://github.com/ddwht/sketch-dynamic-button
+  Fixed for Sketch 3.5 by Bohemian Coding
+  UPDATE: Jul 8 - Bug - Unresponsive Button Issue 35
+*/
+var lZero = [0,0,0,7]
+var lOne = [76,76,76,100]
+var lThree = [82,176,173,100]
+var warning = [217,87,103,100]
+var buttonColor = [0,0,0,7]        // replace with [Red,Green,Blue,Opacity%] eg: [216,216,216,100]
+var cornerRadius = 3                       // replace with integer value.
+
+function addLayerOfRectType(parent,rect) {
+    var style = MSDefaultStyle.defaultStyle();
+    var rectShape=MSRectangleShape.alloc().init();
+    rectShape.cornerRadiusFloat = cornerRadius;
+    rectShape.frame = MSRect.rectWithRect(rect);
+    var container=MSShapeGroup.alloc().init();
+    container.addLayers([rectShape]);
+    container.style().addStylePartOfType(0);
+
+    if (buttonColor && buttonColor.length == 4) {
+      var fill = container.style().fills().firstObject();
+      red = buttonColor[0]/255;
+      green = buttonColor[1]/255;
+      blue = buttonColor[2]/255;
+      opacity = buttonColor[3]/100;
+      fill.color = MSColor.colorWithRed_green_blue_alpha(red,green,blue,opacity);
+    }
+
+    container.resizeToFitChildrenWithOption(1);
+    parent.addLayers([container]);
+    return container;
+}
+
+function alert(msg, title) {
+  title = title || "alert";
+  var app = [NSApplication sharedApplication];
+  [app displayDialog:msg withTitle:title];
+}
+
+function getBackgroundForGroup(group) {
+  var groupLayers = [group layers];
+  for (var i=0; i<[groupLayers count]; i++) {
+    var layer = [groupLayers objectAtIndex:i];
+    if ([layer name] == "BG") {
+      return layer;
+    }
+  }
+  return false;
+}
+
+function getButtonDimensionsForLayer(layer){
+  // log("getButtonDimensionsForLayer: " + [layer frame])
+  var frame = [layer frame]
+  var layerHeight = [frame height],
+      layerWidth =  [frame width],
+      layerX =      [frame x],
+      layerY =      [frame y]
+
+  var splitLayer = [layer name].split(':');
+  var offsetTop,offsetRight,offsetRight,offsetLeft;
+  switch(layerHeight) {
+    //small button
+    case 18:
+        offsetTop = offsetBottom = parseInt(3);
+        offsetRight = offsetLeft = parseInt(10);
+        break;
+    // medium button
+    case 20:
+        offsetTop = offsetBottom = parseInt(6);
+        offsetRight = offsetLeft = parseInt(12);
+        break;
+    // large button
+    case 24:
+        offsetTop = offsetBottom = parseInt(8);
+        offsetRight = offsetLeft = parseInt(16);
+        break;
+    // XLarge button
+    case 28:
+        offsetTop = offsetBottom = parseInt(10);
+        offsetRight = offsetLeft = parseInt(18);
+        break;
+    default:
+        alert('Check your type lineheight', 'Error');
+
+  }
+  // switch(splitLayer.length) {
+  //   case 1:
+  //     // defVal = parseInt(splitLayer[0]) || 20;
+  //     offsetTop = offsetBottom = parseInt(6);
+  //     offsetRight = offsetLeft = parseInt(12);
+  //     layer.name = layerHeight + "x";
+  //     // offsetTop = offsetBottom = offsetRight = offsetLeft = defVal;
+  //     break;
+  //   case 2:
+  //     offsetTop = offsetBottom = parseInt(splitLayer[0]) || 0;
+  //     offsetRight = offsetLeft = parseInt(splitLayer[1]) || 0;
+  //     break;
+  //   case 3:
+  //     offsetTop = parseInt(splitLayer[0]) || 0;
+  //     offsetRight = offsetLeft = parseInt(splitLayer[1]) || 0;
+  //     offsetBottom = parseInt(splitLayer[2]) || 0;
+  //     break;
+  //   case 4:
+  //     offsetTop = parseInt(splitLayer[0]) || 0;
+  //     offsetRight = parseInt(splitLayer[1]) || 0;
+  //     offsetBottom = parseInt(splitLayer[2]) || 0;
+  //     offsetLeft = parseInt(splitLayer[3]) || 0;
+  //     break;
+  //   default:
+  //     alert('Wrong format', 'Error');
+  // }
+
+  return {
+    x: layerX,
+    y: layerY,
+    width: layerWidth,
+    height: layerHeight,
+    offsetTop: offsetTop,
+    offsetBottom: offsetBottom,
+    offsetLeft: offsetLeft,
+    offsetRight: offsetRight,
+    totalWidth: (layerWidth + offsetLeft  + offsetRight),
+    totalHeight: (layerHeight + offsetTop  + offsetBottom)
+  }
+}
+
+// recursive for future
+function recursiveDynamic(selection, document){
+  for (var i=0; i < [selection count]; i++) {
+    var currentLayer = [selection objectAtIndex:i],
+        parentGroup = [currentLayer parentGroup];
+
+    // if Symbol
+    if( [currentLayer class] ==  MSSymbolInstance ){
+      var existingOverrides = currentLayer.overrides();
+      var symbolMaster = currentLayer.symbolMaster();
+      var children = symbolMaster.children();
+      var layerIDs = {};
+      var masterButtonDimensions;
+
+      for (var j = 0; j < [children count]; j++){
+        var layer = children[j];
+        if( [layer class] ==  MSTextLayer ){
+
+          hasFixedLeftTop = layer.hasFixedLeft() && layer.hasFixedTop()
+
+          if (hasFixedLeftTop == false) {
+            layer.hasFixedLeft = true
+            layer.hasFixedTop = true
+            document.displayMessage("Dynamic Button has updated the 'Resizing' option of the Master Text Layer to work correctly. ");
+          }
+
+
+          ObjectId = layer.objectID().toString()
+          var symbolInstanceValue = existingOverrides.objectForKey(ObjectId);
+
+          // To get the exact width of the overriden string, I update the text in the master, get the width and reset it again.
+          oldVal = layer.stringValue()
+          layer.stringValue = symbolInstanceValue;
+          masterButtonDimensions = getButtonDimensionsForLayer(layer)
+          layer.stringValue = oldVal;
+        }
+      }
+
+      // update the instance width and height accordingly using the masterButtonDimensions
+      var instanceWidth = masterButtonDimensions.width + masterButtonDimensions.offsetLeft + masterButtonDimensions.offsetRight
+      var instanceHeight = masterButtonDimensions.height + masterButtonDimensions.offsetTop + masterButtonDimensions.offsetBottom
+
+      // set width and height to the symbol instance motherfucker!
+      var frame = [currentLayer frame]
+      [frame setHeight:instanceHeight]
+      [frame  setWidth:instanceWidth]
+    } else {
+
+      //if( [currentLayer class] ==  MSTextLayer ){
+        var BG = getBackgroundForGroup(parentGroup),
+        buttonDimensions = getButtonDimensionsForLayer(currentLayer)
+
+        if (BG) {
+        // Update background
+          var frame = [BG frame]
+          [frame setHeight:buttonDimensions.totalHeight]
+          [frame  setWidth:buttonDimensions.totalWidth]
+
+          var clframe = [currentLayer frame]
+          var layerX = [clframe x],
+          layerY = [clframe y]
+
+          frame.x = layerX - buttonDimensions.offsetLeft;
+          frame.y = layerY - buttonDimensions.offsetTop;
+
+          // resize parent
+          BG.parentGroup().resizeToFitChildrenWithOption(1);
+        } else {
+          // Create group and background
+          var group = MSLayerGroup.new();
+          var groupFrame = group.frame();
+          groupFrame.setConstrainProportions(false);
+          group.setName('Tf Button');
+
+          parentGroup.addLayers([group]);
+          var BGLayer = addLayerOfRectType(group, currentLayer.rect());
+
+          BGLayer.name = "BG"
+          var frame = [BGLayer frame]
+
+          [frame setHeight:buttonDimensions.totalHeight]
+          [frame  setWidth:buttonDimensions.totalWidth]
+          frame.x = buttonDimensions.x - buttonDimensions.offsetLeft
+          frame.y = buttonDimensions.y - buttonDimensions.offsetTop
+
+          parentGroup.removeLayer(currentLayer);
+          var s = group.addLayers([currentLayer]);
+          currentLayer.select_byExpandingSelection(false,true);
+          group.resizeToFitChildrenWithOption(1);
+        }
+      // }
+    }
+  }
+}
+
+
+
+var setSelectionLineheight = function (context) {
+  var doc = context.document;
+  var selection = context.selection;
+
+  // Sets the line height as multiple of the font size (cmd l)
+
+  var textLayers = [];
+
+  if (selection.count() > 0) {
+
+  	// Loop through selected layers
+  	for (var i = 0; i < selection.count(); i++) {
+
+  		var s = selection[i];
+
+  		// Check if the layer is a text layer
+  		if (s.className() == "MSTextLayer"){
+  			textLayers.push(s);
+  	  	}
+  	}
+
+  	if (textLayers.length > 0) {
+
+  		// get first text layer
+  		var firstTextLayer = textLayers[0];
+
+  		// Calculate initial line height
+  		var fontSize = firstTextLayer.fontSize();
+  		var lineHeight = firstTextLayer.lineHeight();
+
+      // Sketch returns 0 as a value when line height is set to "auto"
+      if (!lineHeight) lineHeight = fontSize;
+
+  		var multiple = (lineHeight / fontSize).toFixed(1);
+
+  		// Show a dialog, asking for the line height multiple
+  		var buttonLevel = String([doc askForUserInput:"Enter button-size (sm, md, lg, xlg) " initialValue:"md"]);
+
+  		for (var j = 0; j < textLayers.length; j++) {
+  			var textLayer = textLayers[j];
+
+        switch(buttonLevel){
+          case "sm":
+            textLayer.setFontSize(12);
+            textLayer.setLineHeight(18);
+            break;
+          case "md":
+            textLayer.setFontSize(14);
+            textLayer.setLineHeight(20);
+            break;
+          case "lg":
+            textLayer.setFontSize(16);
+            textLayer.setLineHeight(24);
+            break;
+          case "xlg":
+            textLayer.setFontSize(20);
+            textLayer.setLineHeight(28);
+            break;
+          default:
+            textLayer.setFontSize(14);
+            textLayer.setLineHeight(20);
+            break;
+        }
+
+  		}
+
+  	} else {
+  		doc.showMessage("Please select a text layer.");
+  	}
+  } else {
+  	doc.showMessage("Please select a text layer.")
+  }
+
+}
+
+
+
+
+
+
+var onRun = function(context){
+  var selection = context.selection;
+  var doc = context.document;
+  var page = doc.currentPage();
+  setSelectionLineheight(context)
+  if ([selection count] == 0) {
+    alert('You need to select a Text layer', 'Selection is empty');
+  } else {
+    recursiveDynamic(selection, doc)
+  }
+}
